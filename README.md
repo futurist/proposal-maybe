@@ -4,7 +4,7 @@
 
 Refer to the[ first version of JS engine](https://2ality.com/2013/10/typeof-null.html.), we can review the below:
 
-1.  The idea of null value (JSVAL_NULL) is for machine code NULL pointer (this idea itself is a [“billion-dollar mistake.”](https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions)), and it's value returned by typeof is **a famous bug**.
+1.  The idea of null value (JSVAL_NULL) is for machine code NULL pointer (this idea itself is a [“billion-dollar mistake.”](https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions)), and it's value returned by `typeof` (`object`) is **a famous bug**.
 2.  The idea of undefined value (JSVAL_VOID) is for a number outside the integer range.
 
 Above two concepts are both heavily abused in modern programming and far away from their original ideas, but **used mostly as an unheathy/uncertain(optional) state in nowadays.**
