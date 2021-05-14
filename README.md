@@ -1,60 +1,352 @@
-# template-for-proposals
+# ECMA Proposal: Maybe
 
-A repository template for ECMAScript proposals.
+## Reason
 
-## Before creating a proposal
+Refer to the[ first version of JS engine](https://2ality.com/2013/10/typeof-null.html.), we can review the below:
 
-Please ensure the following:
-  1. You have read the [process document](https://tc39.github.io/process-document/)
-  1. You have reviewed the [existing proposals](https://github.com/tc39/proposals/)
-  1. You are aware that your proposal requires being a member of TC39, or locating a TC39 delegate to "champion" your proposal
+1.  The idea of null value (JSVAL_NULL) is for machine code NULL pointer (this idea itself is a [“billion-dollar mistake.”](https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions)), and it's value returned by typeof is **a famous bug**.
+2.  The idea of undefined value (JSVAL_VOID) is for a number outside the integer range.
 
-## Create your proposal repo
+Above two concepts are both heavily abused in modern programming and far away from their original ideas, but **used mostly as an unheathy/uncertain(optional) state in nowadays.**
 
-Follow these steps:
-  1.  Click the green ["use this template"](https://github.com/tc39/template-for-proposals/generate) button in the repo header. (Note: Do not fork this repo in GitHub's web interface, as that will later prevent transfer into the TC39 organization)
-  1.  Go to your repo settings “Options” page, under “GitHub Pages”, and set the source to the **main branch** under the root (and click Save, if it does not autosave this setting)
-      1. check "Enforce HTTPS"
-      1. On "Options", under "Features", Ensure "Issues" is checked, and disable "Wiki", and "Projects" (unless you intend to use Projects)
-      1. Under "Merge button", check "automatically delete head branches"
-<!--
-  1.  Avoid merge conflicts with build process output files by running:
-      ```sh
-      git config --local --add merge.output.driver true
-      git config --local --add merge.output.driver true
-      ```
-  1.  Add a post-rewrite git hook to auto-rebuild the output on every commit:
-      ```sh
-      cp hooks/post-rewrite .git/hooks/post-rewrite
-      chmod +x .git/hooks/post-rewrite
-      ```
--->
-  3.  ["How to write a good explainer"][explainer] explains how to make a good first impression.
+Modern programming gradually matched with the real world, from certainty to uncertainty, but javascript lacks one important state: uncertainty, or Maybe state, which has been introduced into modern languages like TypeScript, Rust, Swift etc, and can be a good substitution of null.
 
-      > Each TC39 proposal should have a `README.md` file which explains the purpose
-      > of the proposal and its shape at a high level.
-      >
-      > ...
-      >
-      > The rest of this page can be used as a template ...
+[TypeScript team totally avoid using ](https://basarat.gitbook.io/typescript/recap/null-undefined#final-thoughts)[null](https://basarat.gitbook.io/typescript/recap/null-undefined#final-thoughts) without any problems, and there is a [strictNullChecks](https://www.typescriptlang.org/tsconfig#strictNullChecks) option in TypeScript.
 
-      Your explainer can point readers to the `index.html` generated from `spec.emu`
-      via markdown like
+Existing languages like Haskell has [Maybe](https://hackage.haskell.org/package/base-4.9.1.0/docs/Prelude.html#t:Maybe), Rust has [Option](https://doc.rust-lang.org/std/option/enum.Option.html), and Java has [Optional](https://docs.oracle.com/javase/8/docs/api/index.html?java/util/Optional.html), Swift has [Optional](https://developer.apple.com/documentation/swift/optional), Kotlin has [Null Safety](https://kotlinlang.org/docs/null-safety.html), and many tries of the concept in JS community like below:
 
-      ```markdown
-      You can browse the [ecmarkup output](https://ACCOUNT.github.io/PROJECT/)
-      or browse the [source](https://github.com/ACCOUNT/PROJECT/blob/HEAD/spec.emu).
-      ```
+-   https://github.com/chrissrogers/maybe
 
-      where *ACCOUNT* and *PROJECT* are the first two path elements in your project's Github URL.
-      For example, for github.com/**tc39**/**template-for-proposals**, *ACCOUNT* is "tc39"
-      and *PROJECT* is "template-for-proposals".
+-   https://crocks.dev/docs/crocks/Maybe.html
+
+Wait, we already have [Optional Chaining](https://github.com/tc39/proposal-optional-chaining), [Nullish coalescing Operator](https://github.com/tc39/proposal-nullish-coalescing), are those handled the case? The problem here is they are just simple operators, converting from one null/undefined into another undefined, or may produce more undefined, thinking the nature of undefined / null, they[ are evil](https://blog.ndepend.com/null-evil/) too.
+
+This proposal try to rethinking the way of Nullish/Optional/Maybe from modern language perspect, and try to get out of the old buggy null way, and try to eliminate the null, and try to introduce a new way to programming without them in language level.
+
+Another point is to handle error state, to propose a new elegant way to avoid writing try...catch statement everywhere.
+
+In this proposal, the undefined, null or Error state is called unhealthy DownState, and the opposite is healthy UpState, the up and down term is easy to understand as healthy/unhealthy, and you should avoid continuing operate on an unheathy state!
 
 
-## Maintain your proposal repo
+## High-level API
 
-  1. Make your changes to `spec.emu` (ecmarkup uses HTML syntax, but is not HTML, so I strongly suggest not naming it ".html")
-  1. Any commit that makes meaningful changes to the spec, should run `npm run build` and commit the resulting output.
-  1. Whenever you update `ecmarkup`, run `npm run build` and commit any changes that come from that dependency.
+-   ## States of Maybe:
 
-  [explainer]: https://github.com/tc39/how-we-work/blob/HEAD/explainer.md
+The new global constructor Maybe can have two states:
+
+1.  UpState has **UpValue** **,** a **healthy** state, the value can be consumed.
+2.  DownState has **DownValue** (**Empty** or **Error**) **,** an **unhealthy** state, the value cannot be consumed, the program should abort and throw a **MaybeError**.
+
+-   ## The Maybe value
+
+-   Maybe.up(UpValue), setup UpValue, return a maybe instance in UpState. The argument is **mandatory**, and will throw TypeError when it is undefined/null.
+
+-   Maybe.down(DownValue), setup DownValue, return a maybe instance in DownState, DownValue is **optional**, and will be set to Maybe.none when it's undefined/null.
+
+-   Maybe.set(value), is helper methods to invoke Maybe.up when value is not undefined/null/Maybe.none, or else invoke Maybe.down.
+
+Example:
+
+```
+var a = Maybe.down(); // DownValue will be set to: Maybe.none
+a.up(1);  // a from down state to up state, with value 1
+
+var b = Maybe.up({x: 1});
+
+b.down();  // b is to empty down state
+b.down("Oops..."); // b is to Error down state, with DownValue "Oops..."
+
+// set can auto switch up/down based on value
+
+b.set(1); // UpState: 1
+b.set(null);  // DownState: Maybe.none
+```
+
+-   ## The Maybe constructor
+
+The Maybe(value) constructor is a shortcut for Maybe.set(value)
+
+```
+var a = Maybe(1);  // same as Maybe.up(1)
+var a = Maybe({x:1});  // same as Maybe.up({x:1})
+
+// or nested
+var b = Maybe({x: Maybe(1)}); // same as Maybe.up({x: Maybe.up(1)})
+
+var c = Maybe(); // same as Maybe.down()
+var c = Maybe.down('Error'); // same as Maybe.down('Error')
+```
+
+It's important to note that passing undefined/ null will be ignored and result in a down state.
+
+```
+// below 3 lines all result in down states
+
+var a = Maybe(); // same as Maybe.down()
+var a = Maybe(null); // same as Maybe.down()
+var a = Maybe(undefined); // same as Maybe.down()
+
+a.ok === false;
+```
+
+Make empty as down help eliminate the `undefined / null`.
+
+-   ## Operations
+
+### OK for the healthy UpState
+
+Use .ok to indicate the heathy state of maybe:
+
+```
+a.ok // true if up, false if down
+if(a.ok){...} // good to use with if statement
+```
+
+### Use the .unwrap to Get the UpValue
+
+Maybe type instance can get it's UpValue via unwrap():
+
+1.  When the maybe is in UpState, **return** the UpValue.
+2.  When the maybe is in DownState, **throw** MaybeError(DownValue)
+
+unwrap can have a function as argument, like below:
+
+unwrap(value->anotherValue)
+
+This allows transform value functional when in UpState.
+
+### Use ! as syntax sugar for unwrap()
+
+The new proposed maybe **!** operator is a syntax sugar for maybe.unwrap()(without argument).
+
+Use `!` Instead of unwrap() is proposed since this can lead to an unheathy state and abort the execution, the programmer should be careful for every `!` showing-up! The `!` syntax is good for this purpose, or maybe `!!` like [in kotlin](https://kotlinlang.org/docs/null-safety.html#the-operator) as an alternative (more strength in emotion).
+
+```
+// below is same:
+
+var a = Maybe({x: 1});
+var a = Maybe.up({x: 1});
+
+/** Up State **/
+
+// same as: a.unwrap().x === 1
+a!.x === 1 // only `a` is in up state, `x` can be accessed!
+
+/** Down State **/
+
+var a = Maybe();
+// same as: a.unwrap().x
+a!.x // throw MaybeError
+
+var b = Maybe.down("Oops");
+
+// same as: b.unwrap().x
+b!.x // throw MaybeError: "Oops"
+```
+
+-   ### MaybeError for the unhealthy DownState
+
+When unwrap a DownState value, the program should not continue since it's in unheathy state, here we could use throw to abort the execution, but in fact it's not a true error, it's just indicate an abort from an unheathy state, so here we use a new MaybeError error type to indicate the state, it's more like a message passing:
+
+1.  The error.message will be set to a string containing DownValue or "" when empty
+2.  The error.value will be set to DownValue, absent/undefined/null will fall back to Maybe.none.
+
+When unwrap after the maybe.ok check, it's always safe and never throw MaybeError.
+
+```
+Maybe.down().unwrap();  // throw MaybeError
+Maybe.down('Bad!').unwrap(); // throw MaybeError: Bad!
+
+var a = Maybe({x: 1});
+a.ok && a!.x;  // never throw here
+```
+
+-   ## Helper methods
+
+### .else(fallbackValue) -> Value
+
+1.  Call and return .unwrap when in UpState
+2.  Or return a fallbackValue value when in DownState, fallbackValue can be a function
+
+```
+// set to defaultValue when down state
+Maybe().else('fallbackValue') === 'fallbackValue'
+
+// set to it's value when in up state
+Maybe(1).else('fallbackValue') === 1
+
+// .else can use a function
+Maybe().else(()=>'fallbackValue') === 'fallbackValue'
+```
+
+### .map(upFn, downFn) -> Maybe(Value)
+
+1.  When in UpState, get Value from calling upFn, and return Maybe(Value)
+2.  When in DownState, get Value from calling downFn, and return Maybe(Value)
+
+```
+// .map from a maybe to another maybe
+Maybe.up(1).map(v=>v*2) // created: Maybe(2)
+Maybe.down('Oops').map(v=>v*2, v=>v+'!') // created: Maybe("Oops!")
+
+// chain them
+Maybe().else(Maybe('Hello')).map(v=>v+'World') // Maybe("HelloWorld")
+```
+
+The return value of upFn and downFn will be wrapped into a Maybe.
+
+The .else(fn) is a short form of .map(v=>v, fn).unwrap(), since the form used a lot for quickly getting out of an unhealthy DownState.
+
+-   ## Convert to Promise
+
+```
+var a = Maybe()
+var promise = a.toPromise().then(v=>console.log("up state:" + v))
+a.up(1); // console.log: up state: 1
+
+var promise = a.toPromise().catch(v=>console.log("down state:" + v))
+
+a.down('Oops...'); // console.log: down state: Oops...
+```
+
+**Q: It's possible to make** **.up** **and** **.down** **to return a new Promise to listen to the state change?**
+
+-   ## Working with [Optional Chaining](https://github.com/tc39/proposal-optional-chaining) and [Nullish coalescing Operator](https://github.com/tc39/proposal-nullish-coalescing)
+
+```
+var a = Maybe({x: Maybe({y: 1})});
+a?.x?.y === 1 ; // ---> Should discuss it's behavior here
+
+var b = Maybe();
+b ?? "ok" === "ok"; // This should be same as b.ok ? b! : "ok";
+
+var c = Maybe(3);
+c ?? "ok" === 3;    // This should be same as c.ok ? c! : "ok";
+```
+
+**Q: These cases should be discussed more.**
+
+# Examples
+
+-   ## Substitute undefined/null usages
+
+```
+// Before using maybe:
+function trueOrNull(i){
+    return Math.random()>0.5 ? {x:i} : null
+}
+[1,2,3].forEach((i)=>{
+    const val = trueOrNull(i)
+    // null is evil!
+    if(val !== null) {
+        console.log("value:", val.x)
+    } else {
+        console.log("empty value")
+    }
+})
+```
+
+**We can use** **Maybe** **to avoid using** **null** **:**
+
+```
+// Helper function: convert to Maybe
+function maybeTrueOrEmpty(i){
+    return Maybe(trueOrNull(i)) // null -> down state
+}
+
+// use Maybe
+[1,2,3].forEach((i)=>{
+    const maybe = maybeTrueOrEmpty(i)
+    if(maybe.ok){
+        console.log("value:", val!.x)
+    } else {
+        console.log("empty value")
+    }
+})
+```
+
+**Or use** **.map**
+
+```
+[1,2,3].forEach((i)=>{
+    const maybe = maybeTrueOrEmpty(i)
+    maybe.map(
+        v=>console.log("value:", v.x),  // up state
+        ()=>console.log("empty value")  // down state
+    )
+})
+```
+
+-   ## Use `!` to make try...catch more elegant:
+
+```
+// Helper function: convert to Maybe
+function getMaybe(fn){
+    return (...args){
+        try{
+            return Maybe(fn(...args))
+        } catch(e) {
+            Maybe.down(e)
+        }
+    }
+}
+
+var defaultUser = {name: "anonymous"};
+
+async function getUserName(url){
+    // fetch may be throw!
+    const response = await getMaybe(fetch)(url);  // response is Maybe
+    // Using Maybe, above `await` will never need to try...catch
+    if(response.ok && response!.ok) {
+        const user = await getMaybe(response!.json)() // user is Maybe
+        return user.else(defaultUser).name
+    }
+}
+```
+
+**Above code :**
+
+1.  More elegant compared to try cach every possible error.
+2.  Work perfectly with await since Maybe handled the down state, no need to wrap try catch around await again!
+3.  No undefined or null needed!
+
+-   ## Never reject an awaiting Promise
+
+When combined with Maybe and await, a Promise can always be resolved, since the Maybe DownState can be used as a synonym of rejection or undefined/null value, like below:
+
+```
+function maybePromise(){
+    return new Promise(resolve=>{
+        if(Math.random()>0.5) {
+            // when resolved
+            // resolve to `Maybe UpState`
+            resolve(Maybe({x: 1}))
+        } else {
+            // when rejected
+            // resolve to `Maybe DownState`
+            resolve(Maybe())
+        }
+    })
+}
+
+// below never throw
+// so no need to try...cache
+
+const maybe = await maybePromise()
+
+if(maybe.ok){
+    // indicate resolved
+    ...
+} else {
+    // indicate rejected
+}
+```
+
+But there's a caveat for this usage: resolve a Maybe(undefined/null) value can indicate rejected, this case is reasonable when the value is treated as a data.
+
+You should not use Maybe if you still use undefined/null as a state (the traditional, old way).
+
+## References
+
+https://2ality.com/2021/01/undefined-null-revisited.html
+
