@@ -74,7 +74,7 @@ var a = Maybe({x:1});  // same as Maybe.up({x:1})
 var b = Maybe({x: Maybe(1)}); // same as Maybe.up({x: Maybe.up(1)})
 
 var c = Maybe(); // same as Maybe.down()
-var c = Maybe.down('Error'); // same as Maybe.down('Error')
+var c = Maybe.down('Error');
 ```
 
 It's important to note that passing undefined/ null will be ignored and result in a down state.
