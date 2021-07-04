@@ -221,10 +221,10 @@ var a = Maybe({x: Maybe({y: 1})});
 a?.x?.y === 1 ; // ---> Should discuss it's behavior here
 
 var b = Maybe();
-b ?? "ok" === "ok"; // This should be same as b.ok ? b! : "ok";
+(b ?? "ok") === "ok"; // This should be same as b.ok ? b! : "ok";
 
 var c = Maybe(3);
-c ?? "ok" === 3;    // This should be same as c.ok ? c! : "ok";
+(c ?? "ok") === 3;    // This should be same as c.ok ? c! : "ok";
 ```
 
 **Q: These cases should be discussed more.**
