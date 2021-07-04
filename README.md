@@ -244,7 +244,7 @@ function trueOrNull(i){
     if(val !== null) {
         console.log("value:", val.x)
     } else {
-        console.log("empty value")
+        console.log("Unhealthy state!")
     }
 })
 ```
@@ -263,7 +263,7 @@ function maybeTrueOrEmpty(i){
     if(maybe.ok){
         console.log("value:", val!.x)
     } else {
-        console.log("empty value")
+        console.log("Unhealthy state!")
     }
 })
 ```
@@ -273,9 +273,10 @@ function maybeTrueOrEmpty(i){
 ```
 [1,2,3].forEach((i)=>{
     const maybe = maybeTrueOrEmpty(i)
+    // .map just like `.then` in Promise
     maybe.map(
         v=>console.log("value:", v.x),  // up state
-        ()=>console.log("empty value")  // down state
+        ()=>console.log("Unhealthy state!")  // down state
     )
 })
 ```
