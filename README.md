@@ -4,10 +4,10 @@
 
 Refer to the[ first version of JS engine](https://2ality.com/2013/10/typeof-null.html.), we can review the below:
 
-1.  The idea of null value (JSVAL_NULL) is for machine code NULL pointer (this idea itself is a [“billion-dollar mistake.”](https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions)), and it's value returned by `typeof` (`object`) is **a famous bug**.
-2.  The idea of undefined value (JSVAL_VOID) is for a number outside the integer range.
+1.  The idea of null value (JSVAL_NULL) is for machine code NULL pointer (this idea itself is a [“billion-dollar mistake.”](https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions)), and it's value returned by `typeof` (`object`) is **a famous bug** and mistake in early age of programming language design, instead, all these things should be result in errors, it's a tricky way to avoid handling errors.
+2.  In Javascript/ECMAScript, The idea of undefined value (JSVAL_VOID) is for a number outside the integer range.
 
-Above two concepts are both heavily abused in modern programming and far away from their original ideas, but **used mostly as an unheathy/uncertain(optional) state in nowadays.**
+Above two concepts are both heavily abused in modern programming and far away from their original ideas, but **used mostly as an special case/unheathy/uncertain(optional) state in nowadays.** But some times, people don't pay attention to these states, and result in errors caused by `null/undefined`.
 
 Modern programming gradually matched with the real world, from certainty to uncertainty, but javascript lacks one important state: uncertainty, or Maybe state, which has been introduced into modern languages like TypeScript, Rust, Swift etc, and can be a good substitution of null.
 
@@ -170,13 +170,13 @@ a.ok && a!.x;  // never throw here
 
 ```
 // set to defaultValue when down state
-Maybe().else('fallbackValue') === 'fallbackValue'
+Maybe().else('fallbackValue').unwrap() === 'fallbackValue'
 
 // set to it's value when in up state
-Maybe(1).else('fallbackValue') === 1
+Maybe(1).else('fallbackValue').unwrap() === 1
 
 // .else can use a function
-Maybe().else(()=>'fallbackValue') === 'fallbackValue'
+Maybe().else(()=>'fallbackValue').unwrap() === 'fallbackValue'
 ```
 
 ### .map(upFn, downFn) -> Maybe(Value)
@@ -184,18 +184,21 @@ Maybe().else(()=>'fallbackValue') === 'fallbackValue'
 1.  When in UpState, get Value from calling upFn, and return Maybe(Value)
 2.  When in DownState, get Value from calling downFn, and return Maybe(Value)
 
+
 ```
 // .map from a maybe to another maybe
 Maybe.up(1).map(v=>v*2) // created: Maybe(2)
 Maybe.down('Oops').map(v=>v*2, v=>v+'!') // created: Maybe("Oops!")
 
 // chain them
-Maybe().else(Maybe('Hello')).map(v=>v+'World') // Maybe("HelloWorld")
+Maybe().map(v=>'Hello').map(v=>v+'World').else('Sorry').unwrap()  // 'Sorry'
+Maybe(1).map(v=>'Hello').map(v=>v+'World').else('Sorry').unwrap()  // 'HelloWorld'
 ```
 
-The return value of upFn and downFn will be wrapped into a Maybe.
+Think of the `.map` and `.else` chain have same behaviors as Promise's `.then` and `.catch` chain, for example, **`.else`** will be called only on DownState happened in the chain.
 
-The .else(fn) is a short form of .map(v=>v, fn).unwrap(), since the form used a lot for quickly getting out of an unhealthy DownState.
+The .else(fn) is a short form of .map(v=>v, fn), since the form used a lot for quickly getting out of an unhealthy DownState.
+
 
 -   ## Convert to Promise
 
@@ -299,7 +302,7 @@ async function getUserName(url){
     // Using Maybe, above `await` will never need to try...catch
     if(response.ok && response!.ok) {
         const user = await getMaybe(response!.json)() // user is Maybe
-        return user.else(defaultUser).name
+        return user.else(defaultUser).unwrap().name
     }
 }
 ```
