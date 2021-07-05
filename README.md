@@ -47,7 +47,7 @@ The new global constructor Maybe can have two states:
 
 Example:
 
-```
+```js
 var a = Maybe.down(); // DownValue will be set to: Maybe.none
 a.up(1);  // a from down state to up state, with value 1
 
@@ -66,7 +66,7 @@ b.set(null);  // DownState: Maybe.none
 
 The Maybe(value) constructor is a shortcut for Maybe.set(value)
 
-```
+```js
 var a = Maybe(1);  // same as Maybe.up(1)
 var a = Maybe({x:1});  // same as Maybe.up({x:1})
 
@@ -79,7 +79,7 @@ var c = Maybe.down('Error');
 
 It's important to note that passing undefined/ null will be ignored and result in a down state.
 
-```
+```js
 // below 3 lines all result in down states
 
 var a = Maybe(); // same as Maybe.down()
@@ -97,7 +97,7 @@ Make empty as down help eliminate the `undefined / null`.
 
 Use .ok to indicate the heathy state of maybe:
 
-```
+```js
 a.ok // true if up, false if down
 if(a.ok){...} // good to use with if statement
 ```
@@ -122,7 +122,7 @@ The new proposed maybe **!** operator is a syntax sugar for maybe.unwrap()(witho
 Use `!` Instead of unwrap() is proposed since this can lead to an unheathy state and abort the execution, the programmer should be careful for every `!` showing-up! The `!` syntax is good for this purpose, or maybe `!!` like [in kotlin](https://kotlinlang.org/docs/null-safety.html#the-operator) as an alternative (more strength in emotion).
 
 
-```
+```js
 // below is same:
 
 var a = Maybe({x: 1});
@@ -183,7 +183,7 @@ When unwrap a DownState value, the program should not continue since it's in unh
 
 When unwrap after the maybe.ok check, it's always safe and never throw MaybeError.
 
-```
+```js
 Maybe.down().unwrap();  // throw MaybeError
 Maybe.down('Bad!').unwrap(); // throw MaybeError: Bad!
 
@@ -198,7 +198,7 @@ a.ok && a!.x;  // never throw here
 1.  Call and return .unwrap when in UpState
 2.  Or return a fallbackValue value when in DownState, fallbackValue can be a function
 
-```
+```js
 // set to defaultValue when down state
 Maybe().else('fallbackValue').unwrap() === 'fallbackValue'
 
@@ -215,7 +215,7 @@ Maybe().else(()=>'fallbackValue').unwrap() === 'fallbackValue'
 2.  When in DownState, get Value from calling downFn, and return Maybe(Value)
 
 
-```
+```js
 // .map from a maybe to another maybe
 Maybe.up(1).map(v=>v*2) // created: Maybe(2)
 Maybe.down('Oops').map(v=>v*2, v=>v+'!') // created: Maybe("Oops!")
@@ -232,7 +232,7 @@ The .else(fn) is a short form of .map(v=>v, fn), since the form used a lot for q
 
 -   ## Convert to Promise
 
-```
+```js
 var a = Maybe()
 var promise = a.toPromise().then(v=>console.log("up state:" + v))
 a.up(1); // console.log: up state: 1
@@ -246,7 +246,7 @@ a.down('Oops...'); // console.log: down state: Oops...
 
 -   ## Working with [Optional Chaining](https://github.com/tc39/proposal-optional-chaining) and [Nullish coalescing Operator](https://github.com/tc39/proposal-nullish-coalescing)
 
-```
+```js
 var a = Maybe({x: Maybe({y: 1})});
 a?.x?.y === 1 ; // ---> Should discuss it's behavior here
 
@@ -263,7 +263,7 @@ var c = Maybe(3);
 
 -   ## Substitute undefined/null usages
 
-```
+```js
 // Before using maybe:
 function trueOrNull(i){
     return Math.random()>0.5 ? {x:i} : null
@@ -281,7 +281,7 @@ function trueOrNull(i){
 
 **We can use** **Maybe** **to avoid using** **null** **:**
 
-```
+```js
 // Helper function: convert to Maybe
 function maybeTrueOrEmpty(i){
     return Maybe(trueOrNull(i)) // null -> down state
@@ -300,7 +300,7 @@ function maybeTrueOrEmpty(i){
 
 **Or use** **.map**
 
-```
+```js
 [1,2,3].forEach((i)=>{
     const maybe = maybeTrueOrEmpty(i)
     // .map just like `.then` in Promise
@@ -313,7 +313,7 @@ function maybeTrueOrEmpty(i){
 
 -   ## Use `!` to make try...catch more elegant:
 
-```
+```js
 // Helper function: convert to Maybe
 function getMaybe(fn){
     return (...args){
@@ -348,7 +348,7 @@ async function getUserName(url){
 
 When combined with Maybe and await, a Promise can always be resolved, since the Maybe DownState can be used as a synonym of rejection or undefined/null value, like below:
 
-```
+```js
 function maybePromise(){
     return new Promise(resolve=>{
         if(Math.random()>0.5) {
