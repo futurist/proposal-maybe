@@ -261,7 +261,7 @@ var c = Maybe(3);
 
 # Examples
 
--   ## Substitute undefined/null usages
+-   ## Substitute undefined/null usages example
 
 ```js
 // Before using maybe:
@@ -311,7 +311,7 @@ function maybeTrueOrEmpty(i){
 })
 ```
 
--   ## Use `!` to make try...catch more elegant:
+-   ## Use `!` to make try...catch more elegant example
 
 ```js
 // Helper function: convert to Maybe
@@ -344,7 +344,7 @@ async function getUserName(url){
 2.  Work perfectly with await since Maybe handled the down state, no need to wrap try catch around await again!
 3.  No undefined or null needed!
 
--   ## Never rejected Promise
+-   ## Never rejected Promise example
 
 When combined with Maybe and await, a Promise can always be resolved, since the Maybe DownState can be used as a synonym of rejection or undefined/null value, like below:
 
