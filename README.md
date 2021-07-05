@@ -380,6 +380,9 @@ But there's a caveat for this usage: resolve a Maybe(undefined/null) value can i
 
 You should not use Maybe if you still use undefined/null as a state (the traditional, old way).
 
+The above code maybe not a good practice in the real world, but as a possible usage of combine `Maybe` and `Promise`.
+
+
 ## References
 
 https://2ality.com/2021/01/undefined-null-revisited.html
