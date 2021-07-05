@@ -344,7 +344,7 @@ async function getUserName(url){
 2.  Work perfectly with await since Maybe handled the down state, no need to wrap try catch around await again!
 3.  No undefined or null needed!
 
--   ## Never reject an awaiting Promise
+-   ## Never rejected Promise
 
 When combined with Maybe and await, a Promise can always be resolved, since the Maybe DownState can be used as a synonym of rejection or undefined/null value, like below:
 
