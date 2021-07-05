@@ -151,13 +151,14 @@ But using `!` to handle the error is different and better than rust's `?`, is th
 
 For example, the below `try..catch` code:
 ```js
-function getUserName(url) : String | NetworkError {
+function getUserName(url) : String | undefined {
   let user
   try{
     user = getUser(url);
     return  user.name
   }catch(e){
-    return e;
+    console.log(e.message)
+    throw e
   }
 }
 ```
