@@ -121,6 +121,7 @@ The new proposed maybe **!** operator is a syntax sugar for maybe.unwrap()(witho
 
 Use `!` Instead of unwrap() is proposed since this can lead to an unheathy state and abort the execution, the programmer should be careful for every `!` showing-up! The `!` syntax is good for this purpose, or maybe `!!` like [in kotlin](https://kotlinlang.org/docs/null-safety.html#the-operator) as an alternative (more strength in emotion).
 
+
 ```
 // below is same:
 
@@ -143,6 +144,35 @@ var b = Maybe.down("Oops");
 // same as: b.unwrap().x
 b!.x // throw MaybeError: "Oops"
 ```
+
+Maybe also want to let JS code more friendly to `try...catch` by avoid using it, and led to [rust way of error handling](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html) using `?` (here we use `!`), by nested Maybe, that is, if one thing is maybe, all parents affected will become Maybe, that way, will led to have more elegant way to handle errors than many `try...catch`.
+
+But using `!` to handle the error is different and better than rust's `?`, is that `!` is lazy (later binding when used), and the error produced by Maybe will not immediately halt the function, so have a chance to let user handle it in the same function scope.
+
+For example, the below `try..catch` code:
+```js
+function getUserName(url) : String | NetworkError {
+  let user
+  try{
+    user = getUser(url);
+    return  user.name
+  }catch(e){
+    return e;
+  }
+}
+```
+
+Compared, using below `Maybe` and `!` way:
+
+```js
+function getUserName(url) : Maybe<String, NetworkError> {
+  const user = maybeGetUser(url);
+  return user!.name
+}
+```
+
+Since the `!` is syntax sugar of `unwrap`, if cannot unwrap, error type should be `NetworkError`(DownState), else you get `String` type (UpState).
+
 
 -   ### MaybeError for the unhealthy DownState
 
