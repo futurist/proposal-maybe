@@ -37,6 +37,11 @@ The new global constructor Maybe can have two states:
 1.  UpState has **UpValue** **,** a **healthy** state, the value can be consumed.
 2.  DownState has **DownValue** (**Empty** or **Error**) **,** an **unhealthy** state, the value cannot be consumed, the program should abort and throw a **MaybeError**.
 
+
+Just like a Promise can reject or fulfill with any value, a Maybe would as well, a maybe object can represent one of two branches, either Up or Down, but the Down branch should be commonly a `bad` value, like `null/undefined`, or `Error`.
+
+
+
 -   ## The Maybe value
 
 -   Maybe.up(UpValue), setup UpValue, return a maybe instance in UpState. The argument is **mandatory**, and will throw TypeError when it is undefined/null.
